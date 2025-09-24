@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat History - JotBot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .container { max-width: 1024px; margin: auto; padding: 2rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="text-3xl font-bold text-slate-800">Chat History</h1>
+            <a href="/" class="text-blue-600 font-semibold hover:underline">← Back to Chat</a>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 border-b">
+                    <tr>
+                        <th class="p-4 font-semibold text-slate-600">Timestamp</th>
+                        <th class="p-4 font-semibold text-slate-600">User</th>
+                        <th class="p-4 font-semibold text-slate-600">Question</th>
+                        <th class="p-4 font-semibold text-slate-600">Answer</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for entry in history %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 align-top text-slate-500 whitespace-nowrap">{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="p-4 align-top text-slate-700 font-medium">{{ entry.username }}</td>
+                        <td class="p-4 align-top">{{ entry.question }}</td>
+                        <td class="p-4 align-top text-slate-600">{{ entry.answer }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="p-6 text-center text-slate-500">No chat history found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

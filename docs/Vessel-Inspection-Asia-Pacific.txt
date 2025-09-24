@@ -1,0 +1,8 @@
+Vessel Inspection Summary - The "Pacific Voyager"
+
+Date: 12-Sep-2025
+Region: Asia-Pacific
+Inspector: Kenji Tanaka
+Status: PENDING REVIEW
+
+Summary: The inspection of the "Pacific Voyager" revealed an issue with the port-side lifeboat deployment mechanism. The report status is PENDING REVIEW until the necessary repairs are completed and verified. The crew management logs were found to be in perfect order.
