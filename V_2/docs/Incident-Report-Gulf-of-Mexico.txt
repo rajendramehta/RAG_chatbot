@@ -1,0 +1,7 @@
+Incident Report - The "Gulfstream Runner"
+
+Date: 18-Sep-2025
+Region: Gulf of Mexico
+Report Type: Minor Equipment Malfunction
+
+Summary: At 14:30 CST, the primary GPS unit on the "Gulfstream Runner" experienced a temporary signal loss. The backup system engaged immediately, and there was no deviation from the planned route. The primary unit was reset by the crew and is now functioning normally. The report is not visible at the ship end; it is an office-only document for maintenance tracking.

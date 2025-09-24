@@ -1,0 +1,16 @@
+Regional Operations Contact List
+
+**North Atlantic Region**
+Regional Manager: David Chen
+Emergency Contact Number: +1-212-555-0101
+Designated Vessel for Inspections: The "Atlantic Explorer"
+
+**Asia-Pacific Region**
+Regional Manager: Priya Singh
+Emergency Contact Number: +65-6777-8888
+Designated Vessel for Inspections: The "Pacific Voyager"
+
+**Gulf of Mexico Region**
+Regional Manager: Carlos Garcia
+Emergency Contact Number: +1-713-555-0102
+Designated Vessel for Inspections: The "Gulfstream Runner"

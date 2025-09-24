@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JotBot Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #e2e8f0; }
+        
+        /* --- NEW: Polished Loading Screen Styles --- */
+        #loading-screen {
+            position: fixed; inset: 0; background-color: #f1f5f9; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease-out;
+        }
+        #loading-screen.hidden { opacity: 0; pointer-events: none; }
+        .logo-spinner {
+            width: 60px; height: 60px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background-color: #3b82f6; color: white; font-weight: bold; font-size: 2rem;
+            animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.95); opacity: 0.7; }
+        }
+        #loading-tip {
+            margin-top: 1.5rem; color: #475569; font-weight: 500; max-width: 320px;
+            text-align: center; transition: opacity 0.5s ease-in-out;
+        }
+        
+        /* --- Chat Container Styles --- */
+        .chat-container { display: none; background: #ffffff; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        .chat-container.visible { display: flex; transform: scale(0.95); opacity: 0; animation: fadeInScaleUp 0.5s 0.2s forwards cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeInScaleUp { to { transform: scale(1); opacity: 1; } }
+
+        #chat-messages::-webkit-scrollbar { width: 6px; }
+        #chat-messages::-webkit-scrollbar-track { background: transparent; }
+        #chat-messages::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .message-wrapper { animation: slideInUp 0.4s forwards cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .message-bubble { padding: 12px 20px; max-width: 80%; word-wrap: break-word; font-size: 15px; }
+        .bot-message { background-color: #f1f5f9; color: #1e293b; border-radius: 20px 20px 20px 5px; }
+        .user-message { background: #2563eb; color: white; border-radius: 20px 20px 5px 20px; }
+        .suggestions-popup { position: absolute; bottom: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 12px 12px 0 0; box-shadow: 0 -10px 30px -5px rgba(0,0,0,0.08); padding: 8px; margin: 0 1rem; opacity: 0; transform: translateY(10px); transition: all 0.3s ease; pointer-events: none; }
+        .suggestions-popup.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .suggestion-item { display: flex; align-items: center; width: 100%; text-align: left; padding: 10px 12px; border-radius: 8px; color: #334155; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; border-bottom: 1px solid #f1f5f9; opacity: 0; transform: translateY(10px); animation: slideInUp 0.4s forwards; }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background-color: #eff6ff; color: #1d4ed8; }
+        .suggestion-item svg { margin-right: 10px; flex-shrink: 0; }
+        .suggestion-loader { display: flex; align-items: center; justify-content: center; padding: 16px; color: #64748b; font-style: italic; }
+        .suggestion-loader div { width: 6px; height: 6px; background-color: #94a3b8; border-radius: 50%; margin: 0 3px; animation: bounce 1.4s infinite ease-in-out both; }
+        .suggestion-loader .bounce1 { animation-delay: -0.32s; }
+        .suggestion-loader .bounce2 { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+        .refresh-button { color: #94a3b8; transition: all 0.3s ease; }
+        .refresh-button:hover { color: #1e293b; }
+        .refresh-button.loading { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .send-button { background: #2563eb; transition: all 0.2s ease; }
+        .send-button:hover { background: #1d4ed8; transform: scale(1.1); }
+        .send-button:disabled { background: #9ca3af; cursor: not-allowed; transform: scale(1); }
+    </style>
+</head>
+<body class="flex items-center justify-center h-screen bg-gray-200" data-username="{{ username }}">
+
+    <div id="loading-screen">
+        <div class="logo-spinner">J</div>
+        <p id="loading-text" class="mt-4 text-lg font-semibold text-slate-600">Initializing Knowledge Base...</p>
+        <p id="loading-tip" class="mt-2 text-slate-500"></p>
+    </div>
+
+    <div id="chat-container" class="w-full max-w-2xl h-[95vh] flex-col chat-container rounded-2xl overflow-hidden">
+        <header class="p-4 flex items-center justify-between border-b bg-white flex-shrink-0">
+            <div class="flex items-center">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center bg-blue-600 text-white font-bold text-xl shadow-inner">J</div>
+                <div class="ml-4">
+                    <h1 class="text-xl font-bold text-slate-800">JotBot Assistant</h1>
+                    <p id="status-text" class="text-sm text-slate-500">Online</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                 <a href="/history" title="View History" class="text-slate-500 hover:text-blue-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M12 14V4M6 20v-2M18 20v-4M6 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2M18 16h2a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2"></path></svg>
+                </a>
+                 <a href="/logs" title="View Logs" class="text-slate-500 hover:text-blue-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 21h7a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 12h4"/><path d="M10 16h4"/><path d="M8 8h2"/></svg>
+                </a>
+                <button id="refresh-button" title="Refresh Knowledge Base" class="refresh-button p-2 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <main id="chat-messages" class="flex-1 p-6 overflow-y-auto bg-slate-50 space-y-4"></main>
+        
+        <footer class="bg-white p-4 border-t relative flex-shrink-0">
+            <div id="suggestions-popup" class="suggestions-popup"></div>
+            <div class="flex items-center space-x-3">
+                <textarea id="message-input" class="flex-1 p-3 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" placeholder="Ask a question..." rows="1"></textarea>
+                <button id="send-button" class="send-button text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const loadingScreen = document.getElementById('loading-screen');
+        const loadingText = document.getElementById('loading-text');
+        const loadingTip = document.getElementById('loading-tip');
+        const chatContainer = document.getElementById('chat-container');
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const statusText = document.getElementById('status-text');
+        const refreshButton = document.getElementById('refresh-button');
+        const suggestionsPopup = document.getElementById('suggestions-popup');
+        let debounceTimer;
+        let tipInterval;
+
+        const tips = [
+            "You can click the refresh icon to load new documents.",
+            "Type a keyword to get relevant question suggestions.",
+            "Chat history and error logs can be viewed using the header icons.",
+            "Ask questions about your documents in plain English."
+        ];
+
+        function showLoadingScreen(text) {
+            chatContainer.classList.remove('visible');
+            loadingText.textContent = text;
+            loadingScreen.classList.remove('hidden');
+            
+            loadingTip.textContent = tips[Math.floor(Math.random() * tips.length)];
+            clearInterval(tipInterval);
+            tipInterval = setInterval(() => {
+                loadingTip.style.opacity = 0;
+                setTimeout(() => {
+                    loadingTip.textContent = tips[Math.floor(Math.random() * tips.length)];
+                    loadingTip.style.opacity = 1;
+                }, 500);
+            }, 4000);
+        }
+
+        function hideLoadingScreen() {
+            loadingScreen.classList.add('hidden');
+            chatContainer.classList.add('visible');
+            clearInterval(tipInterval);
+        }
+
+        async function checkKnowledgeBaseStatus() {
+            try {
+                const response = await fetch(`/status`);
+                const data = await response.json();
+                if (data.ready) {
+                    hideLoadingScreen();
+                    return true;
+                }
+            } catch (error) {
+                loadingText.textContent = 'Connection Error. Please refresh.';
+                clearInterval(tipInterval);
+            }
+            return false;
+        }
+
+        function addMessage(content, isBot = false) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `message-wrapper flex w-full ${isBot ? 'justify-start' : 'justify-end'}`;
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${isBot ? 'bot-message' : 'user-message'}`;
+            bubble.innerHTML = content.replace(/\n/g, '<br>');
+            wrapper.appendChild(bubble);
+            chatMessages.appendChild(wrapper);
+            scrollToBottom();
+            return bubble;
+        }
+
+        async function sendMessage(message) {
+            const userMessage = message.trim();
+            if (!userMessage) return;
+            hideSuggestions();
+            addMessage(userMessage, false);
+            messageInput.value = '';
+            
+            const botBubble = addMessage('<span class="italic text-gray-500">Typing...</span>', true);
+            
+            try {
+                const response = await fetch(`/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: userMessage })
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Network response was not ok.');
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = '';
+                botBubble.innerHTML = ''; 
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    fullResponse += decoder.decode(value, { stream: true });
+                    botBubble.innerHTML = fullResponse.replace(/\n/g, '<br>');
+                    scrollToBottom();
+                }
+
+                if (fullResponse.startsWith("Goodbye!")) {
+                    endChatSession();
+                }
+
+            } catch (error) {
+                botBubble.textContent = `Sorry, an error occurred: ${error.message}`;
+            }
+        }
+
+        function endChatSession() {
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            messageInput.placeholder = "Chat ended. Refresh the page to start a new session.";
+        }
+        
+        const debounce = (func, delay) => {
+            return (...args) => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => func.apply(this, args), delay);
+            };
+        };
+
+        async function fetchAndShowSuggestions() {
+            const keyword = messageInput.value.trim();
+            if (!keyword || keyword.length < 3) {
+                hideSuggestions();
+                return;
+            }
+            showSuggestionLoader();
+            try {
+                const response = await fetch(`/suggest_questions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keyword })
+                });
+                const data = await response.json();
+                const validQuestions = data.questions && data.questions.filter(q => q && q.trim().length > 10);
+                
+                if (validQuestions && validQuestions.length > 0) {
+                    showSuggestions(validQuestions);
+                } else {
+                    hideSuggestions();
+                }
+            } catch (error) {
+                hideSuggestions();
+            }
+        }
+        
+        function showSuggestions(questions) {
+            suggestionsPopup.innerHTML = '';
+            questions.forEach((q, index) => {
+                const item = document.createElement('button');
+                item.className = 'suggestion-item';
+                item.style.animationDelay = `${index * 80}ms`; 
+                item.innerHTML = `
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    <span>${q}</span>
+                `;
+                item.onclick = () => {
+                    messageInput.value = q;
+                    hideSuggestions();
+                    sendMessage(q);
+                };
+                suggestionsPopup.appendChild(item);
+            });
+            if (!suggestionsPopup.classList.contains('active')) {
+                 suggestionsPopup.classList.add('active');
+            }
+        }
+
+        function showSuggestionLoader() {
+            suggestionsPopup.innerHTML = `
+                <div class="suggestion-loader">
+                    <span>Generating suggestions</span>
+                    <div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div>
+                </div>
+            `;
+            suggestionsPopup.classList.add('active');
+        }
+
+        function hideSuggestions() {
+            suggestionsPopup.classList.remove('active');
+        }
+        
+        async function refreshKnowledgeBase() {
+            if (refreshButton.classList.contains('loading')) return;
+            
+            showLoadingScreen('Refreshing Knowledge Base...');
+            refreshButton.classList.add('loading');
+            
+            let statusInterval;
+
+            try {
+                const response = await fetch(`/refresh_index`, { method: 'POST' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Refresh request failed.');
+                
+                statusInterval = setInterval(async () => {
+                    const isReady = await checkKnowledgeBaseStatus();
+                    if (isReady) {
+                        clearInterval(statusInterval);
+                        addMessage("<em>System: Knowledge base has been successfully refreshed.</em>", true);
+                        refreshButton.classList.remove('loading');
+                    }
+                }, 3000);
+
+            } catch (error) {
+                addMessage(`<em>System Error: ${error.message}</em>`, true);
+                hideLoadingScreen();
+                refreshButton.classList.remove('loading');
+            }
+        }
+        
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        sendButton.addEventListener('click', () => sendMessage(messageInput.value));
+        messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(messageInput.value); } });
+        messageInput.addEventListener('input', debounce(fetchAndShowSuggestions, 700));
+        refreshButton.addEventListener('click', refreshKnowledgeBase);
+        document.addEventListener('click', (e) => { if (!suggestionsPopup.contains(e.target) && e.target !== messageInput) hideSuggestions(); });
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const username = document.body.dataset.username || 'Guest';
+            const greeting = new Date().getHours() < 12 ? "Good Morning" : new Date().getHours() < 17 ? "Good Afternoon" : "Good Evening";
+            
+            const statusInterval = setInterval(async () => {
+                const isReady = await checkKnowledgeBaseStatus();
+                if (isReady) {
+                    clearInterval(statusInterval);
+                    addMessage(`<strong>${greeting}, ${username}!</strong> I'm JotBot. How can I assist you with your documents today?`, true);
+                }
+            }, 2000); 
+        });
+    </script>
+</body>
+</html>

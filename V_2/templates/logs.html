@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Logs - JotBot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .container { max-width: 1024px; margin: auto; padding: 2rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="text-3xl font-bold text-slate-800">Application Logs</h1>
+            <a href="/" class="text-blue-600 font-semibold hover:underline">← Back to Chat</a>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 border-b">
+                    <tr>
+                        <th class="p-4 font-semibold text-slate-600">Timestamp</th>
+                        <th class="p-4 font-semibold text-slate-600">Level</th>
+                        <th class="p-4 font-semibold text-slate-600">Message</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for log in logs %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 align-top text-slate-500 whitespace-nowrap">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="p-4 align-top">
+                            {% if log.level == 'ERROR' %}
+                                <span class="px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full">{{ log.level }}</span>
+                            {% else %}
+                                <span class="px-2 py-1 text-xs font-semibold text-slate-800 bg-slate-100 rounded-full">{{ log.level }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 align-top text-sm text-slate-700 font-mono whitespace-pre-wrap">{{ log.message }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="p-6 text-center text-slate-500">No application logs found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

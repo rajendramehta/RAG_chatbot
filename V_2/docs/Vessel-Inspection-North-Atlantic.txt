@@ -1,0 +1,8 @@
+Vessel Inspection Summary - The "Atlantic Explorer"
+
+Date: 15-Sep-2025
+Region: North Atlantic
+Inspector: Jane Riley
+Status: FINALIZED
+
+Summary: The annual inspection of the "Atlantic Explorer" was completed. All safety and navigation systems are fully operational. Minor corrosion was noted on the aft deck railing, which has been scheduled for maintenance. The crew's performance during the safety drill was exemplary. The report is marked FINALIZED in the office system and is now read-only.
